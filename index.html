@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Don Quijote IA</title>
+  <link rel="stylesheet" href="Don.css"/>
+  <style>
+    /* Reset y layout base */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow-y: hidden;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      font-family: 'Georgia', serif;
+      background-color: #f9f5e3;
+      color: #4b3621;
+    }
+    /* Contenedor principal con flex-column */
+    #contenido-principal {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    /* Main ocupa espacio y permite scroll si excede */
+    main {
+      flex: 1;
+      overflow-y: auto;
+      text-align: center;
+      padding: 20px;
+    }
+    /* Footer se pega al fondo del flex */
+    footer {
+      background-color: #c2b280;
+      color: #4b3621;
+      padding: 10px 0;
+      text-align: center;
+    }
+    footer a{
+    text-decoration: none;
+    color: white;
+    }
+    /* Modal instrucciones */
+    .modal-instrucciones {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+    .modal-contenido {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(4px);
+      padding: 30px;
+      border: 3px solid #8b1e3f;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      color: #4b3621;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .modal-contenido h2 { text-align:center; margin-bottom:16px; color:#8b1e3f; }
+    .modal-contenido ol { margin:16px 0; padding-left:20px; line-height:1.4; }
+    .modal-contenido button {
+      display:block;
+      margin:20px auto 0;
+      padding:10px 24px;
+      background-color:#8b1e3f;
+      color:#fff;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+    }
+    .modal-contenido button:hover { background-color:#a73155; }
+
+    /* Galería y chat */
+    .galeria { display:flex; justify-content:center; align-items:flex-end; gap:70px; }
+    #Mano { width:auto; height:300px; }
+    #Pluma { width:auto; height:450px; }
+    #modelo-container { width:400px; height:535px; margin:auto; }
+    #chat-container {
+      width:600px;
+      max-height:520px;
+      background:#fff;
+      border:1px solid #ccc;
+      display:flex;
+      flex-direction:column;
+      padding:10px;
+    }
+    
+    #chat-history { flex:1; overflow-y:auto; margin-bottom:10px; }
+    .msg { margin:20px 10px; font-size:0.9em; }
+    .msg.user { text-align:right; }
+    .msg.bot { text-align:left; }
+    #start-btn:hover { background:#a22a53; }
+  </style>
+</head>
+<body>
+    
+  <!-- Modal centrado -->
+  <div id="modal-instrucciones" class="modal-instrucciones">
+    <div class="modal-contenido">
+      <h1>Bienvenido a Don Quijote IA</h1>
+      <p>Para platicar con Don Quijote, sigue estos pasos cuidadosamente:</p>
+      <ol>
+        <li>
+          Di: <strong>"Oye Don Quijote"</strong> para activar al asistente. 
+          <br>🔊 Espera a que Don Quijote te salude.
+        </li>
+        <li>
+          Una vez que te haya saludado, haz tu pregunta con  claridad. Ejemplo: <em>"¿Quién eres?"</em>
+        </li>
+        <li>
+          Don Quijote te dará instrucciones para pedir la respuesta. 
+          Cuando él te lo indique, di: <strong>"Responde ahora Quijote"</strong>.
+        </li>
+      </ol>
+      <p style="margin-top: 15px;"><strong>ℹ️ Importante:</strong></p>
+      <ul style="text-align: left; margin: 10px 0 15px 20px;">
+        <li>Si eres el primer usuario del día, el programa puede tardar hasta <strong>30 segundos</strong> en iniciar. Si ves el mensaje <strong>“🕗 Pensando...”</strong>, significa que el sistema se está preparando.</li>
+        <li><strong>No hables todo de golpe.</strong> Espera a que Don Quijote te responda antes de continuar con el siguiente comando.</li>
+        <li>Este sistema <strong>no funciona como una conversación continua</strong>, sino como una secuencia de pasos específicos.</li>
+        <li>Repite el ciclo: activa con "Oye Don Quijote", espera, pregunta, espera, y finaliza con "Responde ahora Quijote".</li>
+      </ul>
+      <p>Presiona el botón para comenzar.</p>
+      <button id="btn-aceptar">Aceptar</button>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div id="contenido-principal" style="display:none;">
+    <header>
+      <div class="header-content" style="display:flex; align-items:center; justify-content:center; gap:20px; padding:20px 0; background:#8b1e3f; color:#fff;">
+        <img id="Papel" src="Image/Imagen2.png" alt="Papel" style="width:70px;height:70px;"/>
+        <h1>Don Quijote IA</h1>
+        <img id="Libro" src="Image/Imagen4.png" alt="Libro" style="width:70px;height:70px;"/>
+      </div>
+      <nav style="background:#8b1e3f;">
+        <ul style="margin:0; padding:10px 0; list-style:none; display:flex; justify-content:center; gap:20px; color:#fff;">
+          <li><a href="#" style="color:#fff; text-decoration:none;">Home</a></li>
+          <li><a href="#" style="color:#fff; text-decoration:none;">About</a></li>
+          <li><a href="#" style="color:#fff; text-decoration:none;">Services</a></li>
+          <li><a href="#" style="color:#fff; text-decoration:none;">Contact</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <h1>¡Platica con él!</h1>
+      <p>Explora las aventuras de Don Quijote.</p>
+      <div class="galeria">
+        <img id="Mano" src="Image/Imagen3.png" alt="Mano"/>
+        <div id="modelo-container"></div>
+        <div id="chat-container">
+          <div id="spinner" style="display:none; text-align:center; margin:10px 0;"><em>🕗 Pensando...</em></div>
+          <div id="chat-history"></div>
+        </div>
+        <img id="Pluma" src="Image/Imagen1.png" alt="Pluma"/>
+      </div>
+    </main>
+
+    <footer>
+      <p>&copy; 2023 Your Company Name.</p>
+      <p>Síguenos en: <a href="#">Facebook</a>, <a href="#">Twitter</a>, <a href="#">Instagram</a></p>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/ui.js" type="module"></script>
+  <script src="js/tts.js" type="module"></script>
+  <script src="js/recognition.js" type="module"></script>
+  <script src="https://cdn.jsdelivr.net/npm/zlibjs@0.3.1/bin/inflate.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r110/examples/js/loaders/FBXLoader.js"></script>
+  <script>
+    let container, scene, camera, renderer, mixer;
+    const clock = new THREE.Clock();
+    function initThree() {
+      container = document.getElementById("modelo-container");
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+      scene.add(new THREE.AmbientLight(0xffffff, 1));
+      const dir = new THREE.DirectionalLight(0xffffff, 1);
+      dir.position.set(11, 10, 0.5);
+      scene.add(dir);
+      camera.position.set(0, 60, 170);
+      const loader = new THREE.FBXLoader();
+      loader.setPath('./');
+      loader.load('talking.fbx', obj => {
+        obj.scale.set(0.1, 0.1, 0.1);
+        obj.position.set(20, -15, 15);
+        scene.add(obj);
+        obj.traverse(child => {
+          if (child.isMesh && child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(mat => {
+              if (mat.color) {
+                const hsl = {};
+                mat.color.getHSL(hsl);
+                mat.color.setHSL(hsl.h, Math.max(0, hsl.s - 0.1), Math.min(1, hsl.l + 0.15));
+              }
+            });
+          }
+        });
+        if (obj.animations && obj.animations.length) {
+          mixer = new THREE.AnimationMixer(obj);
+          mixer.clipAction(obj.animations[0]).play();
+        }
+      }, undefined, err => console.error('Error cargando talking.fbx:', err));
+      animate();
+      window.addEventListener("resize", onWindowResize);
+    }
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      if (mixer) mixer.update(delta);
+      renderer.render(scene, camera);
+    }
+    function onWindowResize() {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+    document.getElementById("btn-aceptar").addEventListener("click", () => {
+      document.getElementById("modal-instrucciones").style.display = "none";
+      document.getElementById("contenido-principal").style.display = "block";
+      initThree();
+    });
+  </script>
+</body>
+</html>
